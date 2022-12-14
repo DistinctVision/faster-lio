@@ -26,6 +26,10 @@ void PointCloudPreprocess::Process(const sensor_msgs::PointCloud2::ConstPtr &msg
             VelodyneHandler(msg);
             break;
 
+        case LidarType::STARLINE:
+            StarLineHandler(msg);
+            break;
+
         default:
             LOG(ERROR) << "Error LiDAR Type";
             break;
@@ -38,11 +42,11 @@ void PointCloudPreprocess::AviaHandler(const livox_ros_driver::CustomMsg::ConstP
     cloud_full_.clear();
     int plsize = msg->point_num;
 
-    cloud_out_.reserve(plsize);
-    cloud_full_.resize(plsize);
+    cloud_out_.reserve(static_cast<std::size_t>(plsize));
+    cloud_full_.resize(static_cast<std::size_t>(plsize));
 
-    std::vector<bool> is_valid_pt(plsize, false);
-    std::vector<uint> index(plsize - 1);
+    std::vector<bool> is_valid_pt(static_cast<std::size_t>(plsize), false);
+    std::vector<uint> index(static_cast<std::size_t>(plsize - 1));
     for (uint i = 0; i < plsize - 1; ++i) {
         index[i] = i + 1;  // 从1开始
     }
@@ -84,7 +88,7 @@ void PointCloudPreprocess::Oust64Handler(const sensor_msgs::PointCloud2::ConstPt
     pcl::PointCloud<ouster_ros::Point> pl_orig;
     pcl::fromROSMsg(*msg, pl_orig);
     int plsize = pl_orig.size();
-    cloud_out_.reserve(plsize);
+    cloud_out_.reserve(static_cast<std::size_t>(plsize));
 
     for (int i = 0; i < pl_orig.points.size(); i++) {
         if (i % point_filter_num_ != 0) continue;
@@ -116,7 +120,7 @@ void PointCloudPreprocess::VelodyneHandler(const sensor_msgs::PointCloud2::Const
     pcl::PointCloud<velodyne_ros::Point> pl_orig;
     pcl::fromROSMsg(*msg, pl_orig);
     int plsize = pl_orig.points.size();
-    cloud_out_.reserve(plsize);
+    cloud_out_.reserve(static_cast<std::size_t>(plsize));
 
     /*** These variables only works when no point timestamps given ***/
     double omega_l = 3.61;  // scan angular velocity
@@ -184,6 +188,35 @@ void PointCloudPreprocess::VelodyneHandler(const sensor_msgs::PointCloud2::Const
                 cloud_out_.points.push_back(added_pt);
             }
         }
+    }
+}
+
+void PointCloudPreprocess::StarLineHandler(const sensor_msgs::PointCloud2::ConstPtr &msg) {
+    cloud_out_.clear();
+    cloud_full_.clear();
+    pcl::PointCloud<starline_ros::Point> pl_orig;
+    pcl::fromROSMsg(*msg, pl_orig);
+    cloud_out_.reserve(pl_orig.size());
+
+    for (size_t i = 0; i < pl_orig.size(); i++) {
+        const starline_ros::Point &p = pl_orig.points[i];
+
+        double range = p.x * p.x + p.y * p.y + p.z * p.z;
+
+        if (range < (blind_ * blind_)) continue;
+
+        Eigen::Vector3d pt_vec;
+        PointType added_pt;
+        added_pt.x = p.x;
+        added_pt.y = p.y;
+        added_pt.z = p.z;
+        added_pt.intensity = static_cast<float>(p.intensity) / 255.0f;
+        added_pt.normal_x = 0;
+        added_pt.normal_y = 0;
+        added_pt.normal_z = 0;
+        added_pt.curvature = p.timestamp / 1e6;
+
+        cloud_out_.points.push_back(added_pt);
     }
 }
 

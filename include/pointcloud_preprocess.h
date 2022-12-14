@@ -38,6 +38,16 @@ struct EIGEN_ALIGN16 Point {
 };
 }  // namespace ouster_ros
 
+namespace starline_ros {
+struct EIGEN_ALIGN16 Point {
+    PCL_ADD_POINT4D;
+    uint8_t intensity;
+    uint16_t ring;
+    double timestamp;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+}  // namespace starline_ros
+
 // clang-format off
 POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point,
                                   (float, x, x)
@@ -52,17 +62,31 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point,
                                   (std::uint32_t, range, range)
                                   )
 // clang-format on
+POINT_CLOUD_REGISTER_POINT_STRUCT(starline_ros::Point,
+                                  (float, x, x)
+                                  (float, y, y)
+                                  (float, z, z)
+                                  (uint8_t, intensity, intensity)
+                                  (uint16_t, ring, ring)
+                                  (double, timestamp, timestamp)
+)
 
 namespace faster_lio {
 
-enum class LidarType { AVIA = 1, VELO32, OUST64 };
+enum class LidarType 
+{ 
+    AVIA = 1,
+    VELO32 = 2,
+    OUST64 = 3,
+    STARLINE = 4
+};
 
 /**
  * point cloud preprocess
  * just unify the point format from livox/velodyne to PCL
  */
 class PointCloudPreprocess {
-   public:
+public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     PointCloudPreprocess() = default;
@@ -82,10 +106,11 @@ class PointCloudPreprocess {
     LidarType GetLidarType() const { return lidar_type_; }
     void SetLidarType(LidarType lt) { lidar_type_ = lt; }
 
-   private:
+private:
     void AviaHandler(const livox_ros_driver::CustomMsg::ConstPtr &msg);
     void Oust64Handler(const sensor_msgs::PointCloud2::ConstPtr &msg);
     void VelodyneHandler(const sensor_msgs::PointCloud2::ConstPtr &msg);
+    void StarLineHandler(const sensor_msgs::PointCloud2::ConstPtr &msg);
 
     PointCloudType cloud_full_, cloud_out_;
 

@@ -17,7 +17,7 @@
 namespace faster_lio {
 
 class LaserMapping {
-   public:
+public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
 #ifdef IVOX_NODE_TYPE_PHC
@@ -57,13 +57,14 @@ class LaserMapping {
     void PublishPath(const ros::Publisher pub_path);
     void PublishOdometry(const ros::Publisher &pub_odom_aft_mapped);
     void PublishFrameWorld();
+    
     void PublishFrameBody(const ros::Publisher &pub_laser_cloud_body);
     void PublishFrameEffectWorld(const ros::Publisher &pub_laser_cloud_effect_world);
     void Savetrajectory(const std::string &traj_file);
 
     void Finish();
 
-   private:
+private:
     template <typename T>
     void SetPosestamp(T &out);
 
@@ -80,7 +81,7 @@ class LaserMapping {
 
     void PrintState(const state_ikfom &s);
 
-   private:
+private:
     /// modules
     IVoxType::Options ivox_options_;
     std::shared_ptr<IVoxType> ivox_ = nullptr;                    // localmap in ivox

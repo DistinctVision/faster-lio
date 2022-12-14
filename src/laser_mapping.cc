@@ -103,6 +103,9 @@ bool LaserMapping::LoadParams(ros::NodeHandle &nh) {
     } else if (lidar_type == 3) {
         preprocess_->SetLidarType(LidarType::OUST64);
         LOG(INFO) << "Using OUST 64 Lidar";
+    } else if (lidar_type == 4) {
+        preprocess_->SetLidarType(LidarType::STARLINE);
+        LOG(INFO) << "Using StarLine Lidar";
     } else {
         LOG(WARNING) << "unknown lidar_type";
         return false;
@@ -266,12 +269,16 @@ void LaserMapping::Run() {
         return;
     }
 
+    LOG(WARNING) << "1: " << scan_undistort_->size();
+
     /// IMU process, kf prediction, undistortion
     p_imu_->Process(measures_, kf_, scan_undistort_);
     if (scan_undistort_->empty() || (scan_undistort_ == nullptr)) {
         LOG(WARNING) << "No point, skip this scan!";
         return;
     }
+
+    LOG(WARNING) << "2: " << scan_undistort_->size();
 
     /// the first scan
     if (flg_first_scan_) {
@@ -289,6 +296,8 @@ void LaserMapping::Run() {
             voxel_scan_.filter(*scan_down_body_);
         },
         "Downsample PointCloud");
+
+    LOG(WARNING) << "3: " << scan_down_body_->size();
 
     int cur_pts = scan_down_body_->size();
     if (cur_pts < 5) {
